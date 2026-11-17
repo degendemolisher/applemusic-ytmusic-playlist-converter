@@ -65,14 +65,16 @@ def main():
 
             results = yt.search(query, filter='songs', limit=5)
             if len(results) == 0:
+            results = [r for r in results if r.get('videoId')]
                 print(f'\033[31m No results for {query}{RESET}')
                 continue
 
             # YouTube search is kinda good, so just take the first result
             best_result = results[0]
 
+            best_artists = best_result.get('artists') or []
             print(f'{GREEN} {title} - {artist} '.ljust(60, ' '), end='')
-            print(f'-> {best_result["title"]} - {best_result["artists"][0]["name"] if len(best_result["artists"]) else "" }{RESET}')
+            print(f'-> {best_result.get("title", "")} - {best_artists[0]["name"] if best_artists else ""}{RESET}')
 
             if best_result['videoId'] not in existing and best_result['videoId'] not in to_add:
                 to_add.append(best_result['videoId'])
