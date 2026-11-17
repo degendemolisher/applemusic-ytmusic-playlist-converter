@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 import json
 import os
-import sys
 
 from ytmusicapi import OAuthCredentials, YTMusic
-
-RED = '\033[31m'
-RESET = '\033[0m'
 
 ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
 
@@ -49,8 +45,6 @@ def get_ytmusic(auth_file):
     client_id = os.environ.get('YTMUSIC_CLIENT_ID')
     client_secret = os.environ.get('YTMUSIC_CLIENT_SECRET')
     if not client_id or not client_secret:
-        print(f'{RED} {auth_file} is an OAuth file: set YTMUSIC_CLIENT_ID and YTMUSIC_CLIENT_SECRET{RESET}',
-              file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError(f'{auth_file} is an OAuth file: set YTMUSIC_CLIENT_ID and YTMUSIC_CLIENT_SECRET')
 
     return YTMusic(auth_file, oauth_credentials=OAuthCredentials(client_id=client_id, client_secret=client_secret))

@@ -34,16 +34,16 @@ def main():
 
 
 def get_songs_from_apple_playlist(playlist_url):
-    r = requests.get(playlist_url)
+    r = requests.get(playlist_url, timeout=30)
 
     # Check if the request was successful
     if r.status_code != 200:
-        print(f'{RED} there was an error while getting playlist from Apple Music: {r.text} ({r.status_code}){RESET}',
-              file=sys.stderr)
-        pass
+        raise Exception(f'Error getting playlist from Apple Music: {r.text} ({r.status_code})')
 
     bellazuppa = BeautifulSoup(r.content, 'html.parser')
     script_tag = bellazuppa.find("script", {"id": "serialized-server-data"})
+    if script_tag is None:
+        raise Exception('Playlist data not found in Apple Music page')
 
     j = json.loads(script_tag.text)
     # Newer pages wrap the list in {"data": [...], "userTokenHash": ...}
@@ -62,10 +62,11 @@ def get_songs_from_apple_playlist(playlist_url):
 
     # JQ query: '.[].data.sections[1].items[] | ([.title, .artistName, .tertiaryLinks[0].title])'
     songs = []
-    for song in j[0]['data']['sections'][1]['items']:
+    track_section = next(s for s in j[0]['data']['sections'] if s.get('itemKind') == 'trackLockup')
+    for song in track_section['items']:
         title = song['title']
         artist = song['artistName']
-        album = song['tertiaryLinks'][0]['title']
+        album = song['tertiaryLinks'][0]['title'] if song.get('tertiaryLinks') else None
         duration = song['duration']
 
         songs.append({

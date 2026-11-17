@@ -47,7 +47,7 @@ class AppleMusicClient:
             'types': 'songs',
             'limit': limit
         }
-        response = requests.get(url, headers=self.headers, params=params)
+        response = requests.get(url, headers=self.headers, params=params, timeout=30)
         if response.status_code == 200:
             return response.json()
         else:
@@ -61,9 +61,9 @@ class AppleMusicClient:
             data = {
                 'data': [{'id': song_id, 'type': 'songs'} for song_id in chunk]
             }
-            response = requests.post(url, headers=self.headers, json=data)
+            response = requests.post(url, headers=self.headers, json=data, timeout=30)
             if response.status_code not in [200, 201, 204]:
-                raise warnings.warn(f"Error adding songs to playlist: {response.text}")
+                warnings.warn(f"Error adding songs to playlist: {response.text}")
 
     def make_playlist_public(self, playlist_id):
         """Make a playlist public."""
@@ -75,23 +75,23 @@ class AppleMusicClient:
 
             }
         }
-        response = requests.patch(url, headers=self.headers, json=data)
+        response = requests.patch(url, headers=self.headers, json=data, timeout=30)
         if response.status_code not in [200, 201, 204]:
             raise Exception(f"Error making playlist public: {response.text}")
 
     def get_playlist(self, playlist_id):
         url = f"{self.api_url}/v1/me/library/playlists/{playlist_id}"
-        return requests.get(url, headers=self.headers).json()
+        return requests.get(url, headers=self.headers, timeout=30).json()
 
     def get_library_playlists(self):
         url = f"{self.api_url}/v1/me/library/playlists"
-        return requests.get(url, headers=self.headers).json()
+        return requests.get(url, headers=self.headers, timeout=30).json()
 
     def get_playlist_tracks(self, playlist_id):
         url = f"{self.api_url}/v1/me/library/playlists/{playlist_id}/tracks"
         tracks = []
         while True:
-            r = requests.get(url, headers=self.headers)
+            r = requests.get(url, headers=self.headers, timeout=30)
             if r.status_code != 200:
                 raise Exception(f"Error getting playlist tracks: {r.text}")
             j = r.json()
@@ -113,7 +113,7 @@ def main():
     parser.add_argument('playlist_id', help='Apple Music playlist ID')
     parser.add_argument('input', nargs='?', type=argparse.FileType('r'), default='-',
                         help='JSON playlist file (default stdin)')
-    parser.add_argument('-b', '--bearer-token', help='Apple Music bearer token')
+    parser.add_argument('-b', '--bearer-token', required=True, help='Apple Music bearer token')
     parser.add_argument('-m', '--music-token', help='Apple Music music token')
     parser.add_argument('-C', '--country-code', default='US', help='Country code (default US)')
     parser.add_argument('-c', '--cache', default='applemusic-cache.json',
@@ -156,7 +156,9 @@ def main():
 
         tracks = client.get_playlist_tracks(playlist_id)
         for track in tracks:
-            existing.add(track['attributes']['playParams']['catalogId'])
+            catalog_id = track['attributes'].get('playParams', {}).get('catalogId')
+            if catalog_id:
+                existing.add(catalog_id)
 
         print(f"Found playlist containing {len(existing)} songs in library", file=sys.stderr)
 
@@ -172,13 +174,14 @@ def main():
                 cache[query] = song['appleId']
                 print(f'{GREEN} {title} - {artist} '.ljust(60, ' '), end='')
                 print(f'-> provided: {song["appleId"]}{RESET}')
-                song_ids.append(song['appleId'])
+                if song['appleId'] not in existing and song['appleId'] not in song_ids:
+                    song_ids.append(song['appleId'])
                 continue
 
             if query in cache:
                 print(f'{YELLOW} {title} - {artist} '.ljust(60, ' '), end='')
                 print(f'-> cached: {cache[query]}{RESET}')
-                if cache[query] not in existing:
+                if cache[query] not in existing and cache[query] not in song_ids:
                     song_ids.append(cache[query])
                 continue
 
@@ -199,7 +202,7 @@ def main():
             print(f'{GREEN} {title} - {artist} '.ljust(60, ' '), end='')
             print(f'-> found: {song_attributes["name"]} - {song_attributes["artistName"]}{RESET}')
 
-            if song_id not in existing:
+            if song_id not in existing and song_id not in song_ids:
                 song_ids.append(song_id)
     finally:
         with open(args.cache, 'w') as f:

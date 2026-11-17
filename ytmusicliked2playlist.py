@@ -32,7 +32,7 @@ def main():
     to_add = []
 
     for song in liked_songs['tracks']:
-        if song['videoId'] not in existing and song['videoId'] not in to_add:
+        if song['videoId'] and song['videoId'] not in existing and song['videoId'] not in to_add:
             to_add.append(song['videoId'])
 
     author = dst_playlist.get('author', {}).get('name', 'Unknown')
@@ -40,7 +40,9 @@ def main():
           file=sys.stderr)
 
     if len(to_add) > 0:
-        yt.add_playlist_items(playlist_id, to_add)
+        result = yt.add_playlist_items(playlist_id, to_add)
+        if 'SUCCEEDED' not in str(result.get('status', '')):
+            raise Exception(f'Error adding songs to playlist: {result}')
 
 
 if __name__ == '__main__':

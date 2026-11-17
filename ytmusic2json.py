@@ -57,8 +57,8 @@ def main():
         output.append({
             'title': track['title'],
             'artist': ", ".join((i["name"] for i in (track.get('artists') or []))),
-            'album': (track['album'] or {}).get('name'),
-            'duration': (track.get('duration_seconds', 0) * 1000) or None, 'videoId': track['videoId'],
+            'album': (track.get('album') or {}).get('name'),
+            'duration': ((track.get('duration_seconds') or 0) * 1000) or None, 'videoId': track['videoId'],
         })
 
     json.dump(output, args.output, indent=4)

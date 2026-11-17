@@ -31,7 +31,7 @@ def main():
     dst_playlist = yt.get_playlist(args.playlist_id, limit=None)
 
     author = dst_playlist.get('author', {}).get('name', 'Unknown')
-    print(f'{YELLOW} Adding new songs to playlist "{dst_playlist["title"]}"{author}{RESET}')
+    print(f'{YELLOW} Adding new songs to playlist "{dst_playlist["title"]}" by {author}{RESET}')
 
     # Read the Apple Music playlist
     src_playlist = json.load(args.input)
@@ -47,11 +47,12 @@ def main():
             title = song['title']
             artist = song['artist']
 
-            if 'videoId' in song:
+            if song.get('videoId'):
                 cache[f'{title} {artist}'] = song['videoId']
-                print(f'{GREEN} {title} - {artist} '.ljust(60, ' '), end='')
-                print(f'-> provided: {song["videoId"]}{RESET}')
-                to_add.append(song['videoId'])
+                if song['videoId'] not in existing and song['videoId'] not in to_add:
+                    print(f'{GREEN} {title} - {artist} '.ljust(60, ' '), end='')
+                    print(f'-> provided: {song["videoId"]}{RESET}')
+                    to_add.append(song['videoId'])
                 continue
 
             query = f'{title} {artist}'
@@ -64,15 +65,15 @@ def main():
                 continue
 
             results = yt.search(query, filter='songs', limit=5)
-            if len(results) == 0:
             results = [r for r in results if r.get('videoId')]
+            if len(results) == 0:
                 print(f'\033[31m No results for {query}{RESET}')
                 continue
 
             # YouTube search is kinda good, so just take the first result
             best_result = results[0]
-
             best_artists = best_result.get('artists') or []
+
             print(f'{GREEN} {title} - {artist} '.ljust(60, ' '), end='')
             print(f'-> {best_result.get("title", "")} - {best_artists[0]["name"] if best_artists else ""}{RESET}')
 
@@ -86,7 +87,9 @@ def main():
     print(f'{YELLOW} Adding {len(to_add)} new songs...{RESET}')
 
     if len(to_add) > 0:
-        yt.add_playlist_items(args.playlist_id, videoIds=to_add)
+        result = yt.add_playlist_items(args.playlist_id, videoIds=to_add)
+        if 'SUCCEEDED' not in str(result.get('status', '')):
+            raise Exception(f'Error adding songs to playlist: {result}')
 
     print(f'{GREEN} Done!{RESET}')
 
