@@ -4,7 +4,7 @@
 import argparse
 import sys
 
-from ytmusicapi import YTMusic
+from ytauth import get_ytmusic
 
 
 def main():
@@ -18,7 +18,7 @@ def main():
 
     print(f'Getting playlist from YouTube Music...', file=sys.stderr)
 
-    yt = YTMusic(args.oauth)
+    yt = get_ytmusic(args.oauth)
 
     # noinspection PyTypeChecker
     liked_songs = yt.get_liked_songs(limit=None)

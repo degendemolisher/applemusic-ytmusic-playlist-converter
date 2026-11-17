@@ -6,7 +6,7 @@ import json
 import os
 import sys
 
-from ytmusicapi import YTMusic
+from ytauth import get_ytmusic
 
 YELLOW = '\033[33m'
 GREEN = '\033[32m'
@@ -33,7 +33,7 @@ def main():
     else:
         oauth = args.oauth
 
-    yt = YTMusic(oauth)
+    yt = get_ytmusic(oauth)
 
     print(f'Getting playlist from YouTube Music...', file=sys.stderr)
 

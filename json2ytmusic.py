@@ -4,7 +4,7 @@ import argparse
 import json
 import os
 
-from ytmusicapi import YTMusic
+from ytauth import get_ytmusic
 
 YELLOW = '\033[33m'
 GREEN = '\033[32m'
@@ -20,7 +20,7 @@ def main():
     parser.add_argument('-c', '--cache', default='ytmusic-cache.json', help='Cache file (default ytmusic-cache.json)')
     args = parser.parse_args()
 
-    yt = YTMusic(args.oauth)
+    yt = get_ytmusic(args.oauth)
 
     cache = {}
     if os.path.exists(args.cache):

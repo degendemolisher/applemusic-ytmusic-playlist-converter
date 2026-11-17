@@ -28,8 +28,14 @@ The playlist ID is the last part of the URL, after the last `/`, when viewing
 the playlist in the browser.
 
 ```bash
-# Authenticate with YouTube Music
+# Authenticate with YouTube Music, using a Google Cloud OAuth client ID
+# of type "TVs and Limited Input devices"
 ytmusicapi oauth --file oauth.json
+
+# The scripts need the same client ID and secret to use oauth.json.
+# Export them, or put these two lines in a .env file in this directory.
+export YTMUSIC_CLIENT_ID='...apps.googleusercontent.com'
+export YTMUSIC_CLIENT_SECRET='...'
 
 # Upload playlist
 ./json2ytmusic.py 'PlaylistID' 'playlist.json'
