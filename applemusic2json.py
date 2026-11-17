@@ -19,16 +19,18 @@ def main():
     parser = argparse.ArgumentParser(description='Convert Apple Music playlist to a JSON file')
     parser.add_argument('playlist_url', help='Apple Music playlist URL')
     parser.add_argument('-r', '--reverse', action='store_true', help='reverse the order of the songs')
+    parser.add_argument('-n', '--with-name', action='store_true',
+                        help='output {"name": playlist name, "songs": [...]} instead of the song list')
     args = parser.parse_args()
 
     playlist_url = args.playlist_url
 
     print(f'Getting playlist from Apple Music...', file=sys.stderr)
-    songs = get_songs_from_apple_playlist(playlist_url)
+    name, songs = get_songs_from_apple_playlist(playlist_url)
     if args.reverse:
         songs.reverse()
 
-    json.dump(songs, sys.stdout, indent=4)
+    json.dump({'name': name, 'songs': songs} if args.with_name else songs, sys.stdout, indent=4)
 
     print(f'{GREEN} Done!{RESET}', file=sys.stderr)
 
@@ -50,15 +52,8 @@ def get_songs_from_apple_playlist(playlist_url):
     if isinstance(j, dict):
         j = j['data']
 
-    try:
-        print(f'{YELLOW} Found playlist "{j[0]["data"]["seoData"]["schemaContent"]["name"]}" '
-              f'by {j[0]["data"]["seoData"]["schemaContent"]["author"]["name"]}{RESET}', file=sys.stderr)
-    except KeyError:
-        try:
-            title = j[0]['data']['seoData']['pageTitle'].removesuffix(' - Apple Music')
-            print(f'{YELLOW} Found playlist "{title}"{RESET}', file=sys.stderr)
-        except KeyError:
-            pass
+    name = get_playlist_name(j[0]['data'])
+    print(f'{YELLOW} Found playlist "{name}"{RESET}', file=sys.stderr)
 
     # JQ query: '.[].data.sections[1].items[] | ([.title, .artistName, .tertiaryLinks[0].title])'
     songs = []
@@ -76,7 +71,14 @@ def get_songs_from_apple_playlist(playlist_url):
             'duration': duration,
         })
 
-    return songs
+    return name, songs
+
+
+def get_playlist_name(page):
+    header = next((s for s in page['sections'] if s.get('itemKind') == 'containerDetailHeaderLockup'), None)
+    if header and header.get('items'):
+        return header['items'][0]['title'].strip()
+    return page['seoData']['pageTitle'].removesuffix(' - Apple Music')
 
 
 if __name__ == '__main__':

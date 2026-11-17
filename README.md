@@ -39,7 +39,16 @@ export YTMUSIC_CLIENT_SECRET='...'
 
 # Upload playlist
 ./json2ytmusic.py 'PlaylistID' 'playlist.json'
+
+# Or create a new playlist (PRIVATE unless --privacy says otherwise)
+./json2ytmusic.py --create 'Title' --privacy UNLISTED 'playlist.json'
 ```
+
+`applemusic2json.py --with-name` outputs `{"name": ..., "songs": [...]}` instead of the
+plain song list; `json2ytmusic.py` reads either.
+
+`json2ytmusic.py --result result.json` writes the playlist ID, how many songs were added,
+and the songs it matched only roughly (`uncertain`) or not at all (`not_found`).
 
 ## License
 
