@@ -46,12 +46,19 @@ def get_songs_from_apple_playlist(playlist_url):
     script_tag = bellazuppa.find("script", {"id": "serialized-server-data"})
 
     j = json.loads(script_tag.text)
+    # Newer pages wrap the list in {"data": [...], "userTokenHash": ...}
+    if isinstance(j, dict):
+        j = j['data']
 
     try:
         print(f'{YELLOW} Found playlist "{j[0]["data"]["seoData"]["schemaContent"]["name"]}" '
               f'by {j[0]["data"]["seoData"]["schemaContent"]["author"]["name"]}{RESET}', file=sys.stderr)
     except KeyError:
-        pass
+        try:
+            title = j[0]['data']['seoData']['pageTitle'].removesuffix(' - Apple Music')
+            print(f'{YELLOW} Found playlist "{title}"{RESET}', file=sys.stderr)
+        except KeyError:
+            pass
 
     # JQ query: '.[].data.sections[1].items[] | ([.title, .artistName, .tertiaryLinks[0].title])'
     songs = []
